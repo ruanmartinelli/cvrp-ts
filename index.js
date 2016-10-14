@@ -1,1 +1,1 @@
-console.log("First commit");
+const _ = require('lodash');

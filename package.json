@@ -19,5 +19,8 @@
   "bugs": {
     "url": "https://github.com/ruanmartinelli/cvrp-ts/issues"
   },
-  "homepage": "https://github.com/ruanmartinelli/cvrp-ts#readme"
+  "homepage": "https://github.com/ruanmartinelli/cvrp-ts#readme",
+  "dependencies": {
+    "lodash": "^4.16.4"
+  }
 }
