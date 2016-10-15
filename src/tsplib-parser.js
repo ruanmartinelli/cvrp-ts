@@ -40,6 +40,9 @@ function getContent(stream, cb){
     let dimension       = '';
     let edgeWeightType  = '';
 
+    let dsLine = undefined;
+    let ncsLine = undefined;
+
     rl.on('line', (line) => {
         if(line[0] === ' ') line = line.slice(1, line.length)
 
@@ -62,26 +65,22 @@ function getContent(stream, cb){
         if(isDimension) dimension   = _.replace(line, 'DIMENSION : ', '');
         if(isEdgeWeightType) edgeWeightType = _.replace(line, 'EDGE_WEIGHT_TYPE : ', '');
 
-        //////////
-        if(inNCS && !isDemandSection) {
+        if(isNodeCoordSection) ncsLine = 0;
+        if(isDemandSection) dsLine = 0;
+
+        if(ncsLine < dimension && !isNodeCoordSection){
             let coord = _.split(line, ' ');
 
-            NCS.push({ n: coord[0], x: coord[1], y: coord[2]})
-        };
-        if(inDS && !isDepotSection){
+            NCS.push({ n: coord[0], x: coord[1], y: coord[2], v: 0})
+            ncsLine++;
+        }
+        if(dsLine < dimension && !isDemandSection){
             let depot = _.split(line, ' ');
+            let matchingIndex = _.toInteger(depot[0]) -1;
 
-            DS.push({n: depot[0], v: depot[1]})
+            NCS[matchingIndex].v = depot[1];
+            dsLine++;
         }
-
-        /////////
-        if(isNodeCoordSection) inNCS = true;
-        if(isDepotSection) inDS = false;
-        if(isDemandSection){
-            inNCS   = false;
-            inDS    = true;
-        }
-
     });
 
     rl.on('close', () => {
@@ -92,8 +91,8 @@ function getContent(stream, cb){
             capacity,
             dimension,
             edgeWeightType,
-            ds: DS,
-            ncs: NCS
+            // ds: DS,
+            vertices: NCS
         })
 
     })
