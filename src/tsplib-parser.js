@@ -61,8 +61,8 @@ function getContent(stream, cb){
         if(isName)      name        = _.replace(line, 'NAME : ', '');
         if(isType)      type        = _.replace(line, 'TYPE : ', '');
         if(isComment)   comment     = _.replace(line, 'COMMENT : ', '');
-        if(isCapacity)  capacity    = _.replace(line, 'CAPACITY : ', '');
-        if(isDimension) dimension   = _.replace(line, 'DIMENSION : ', '');
+        if(isCapacity)  capacity    = _.toInteger(_.replace(line, 'CAPACITY : ', ''));
+        if(isDimension) dimension   = _.toInteger(_.replace(line, 'DIMENSION : ', ''))
         if(isEdgeWeightType) edgeWeightType = _.replace(line, 'EDGE_WEIGHT_TYPE : ', '');
 
         if(isNodeCoordSection) ncsLine = 0;
@@ -71,14 +71,16 @@ function getContent(stream, cb){
         if(ncsLine < dimension && !isNodeCoordSection){
             let coord = _.split(line, ' ');
 
-            NCS.push({ n: coord[0], x: coord[1], y: coord[2], v: 0})
+            NCS.push({ id: _.toInteger(coord[0]),
+                            x: _.toInteger(coord[1]),
+                            y: _.toInteger(coord[2]), demand: 0})
             ncsLine++;
         }
         if(dsLine < dimension && !isDemandSection){
             let depot = _.split(line, ' ');
             let matchingIndex = _.toInteger(depot[0]) -1;
 
-            NCS[matchingIndex].v = depot[1];
+            NCS[matchingIndex].demand =_.toInteger(depot[1]);
             dsLine++;
         }
     });
