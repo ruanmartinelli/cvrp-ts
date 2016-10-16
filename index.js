@@ -15,27 +15,47 @@ const TRUCK_AMOUNT = 5;
 function tabu(graph){
     const V = graph.vertices;
 
-    let const_matrix = find_cost_matrix(V, graph.dimension)
+    let cost_matrix = find_cost_matrix(V, graph.dimension)
     success("Cost matrix OK");
 
     let initial_solution = find_initial_solution(V);
     success("Initial Solution OK (" + initial_solution.iterations + " iteration(s))")
 
+    let solution_cost = find_solution_cost(initial_solution, cost_matrix)
+    debug("Initial solution cost: " + solution_cost);
+
     success("Tabu search finished");
+}
+
+function find_solution_cost(solution, cost_matrix){
+    const routes = solution.routes;
+    let costs = [];
+
+    _.forEach(routes, (route) => {
+        let route_cost = 0;
+        for(var i = 0; i < route.length -1; i++){
+            route_cost += cost_matrix[route[i].id -1][route[i+1].id -1]
+        }
+        costs.push(_.toInteger(route_cost.toFixed(2)))
+    })
+
+    const total_cost = _.reduce(costs, (sum,v) => sum += v , 0)
+
+    return total_cost;
 }
 
 function find_initial_solution(vertices){
     const chunk_size = vertices.length / TRUCK_AMOUNT;
-    let random_routes = [];
+    let routes = [];
     let iterations = 0;
     while(true){
         iterations ++;
-        random_routes = _.chunk(_.shuffle(vertices), chunk_size);
-        let route_demands = _.map(random_routes, calculate_demand_from_route);
+        routes = _.chunk(_.shuffle(vertices), chunk_size);
+        let route_demands = _.map(routes, calculate_demand_from_route);
         if(_.every(route_demands, (riv) => riv < 100)) break;
     }
 
-    return {random_routes, iterations}
+    return {routes, iterations}
 }
 
 function calculate_demand_from_route(route){
@@ -48,14 +68,17 @@ function calculate_demand_from_route(route){
 function find_cost_matrix(vertices, dimension){
     debug("Dimension: " + dimension)
 
-    let cost_matrix = Array(dimension).fill(Array(dimension));
+    let cost_matrix = [];
 
-    _.forEach(vertices, (row) => {
-        _.forEach(vertices, (col) => {
-            let d = distance([row.x, row.y], [col.x,col.y]);
-            cost_matrix[row.id - 1][col.id -1] = d;
-        })
+    for(var i = 0; i < vertices.length; i++){
+        cost_matrix.push([])
+        for(var j = 0; j < vertices.length; j++){
+            let p1 = [vertices[i].x, vertices[i].y]
+            let p2 = [vertices[j].x, vertices[j].y]
+            const d = distance(p1, p2);
 
-    })
+            cost_matrix[i].push(d);
+        }
+    }
     return cost_matrix;
 }
