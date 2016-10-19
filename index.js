@@ -4,16 +4,19 @@ const distance = require('euclidean-distance');
 const chalk = require('chalk');
 const debug = (text) => console.log(chalk.green.bold("[DEBUG] ") + chalk.blue.bold(text))
 const success = (text) => console.log(chalk.green.bold("[LOG] "+ text + " ✔️"))
-
 parser.tsplib(process.argv.slice(2), (res) => {
     // console.log(res[0]);
     tabu(res[0]);
 });
 
 const TRUCK_AMOUNT = 5;
+let CAPACITY = 0;
 
 function tabu(graph){
     const V = graph.vertices;
+    const max_iterations = 1000;
+
+    CAPACITY = graph.capacity;
 
     let cost_matrix = find_cost_matrix(V, graph.dimension)
     success("Cost matrix OK");
@@ -21,10 +24,91 @@ function tabu(graph){
     let initial_solution = find_initial_solution(V);
     success("Initial Solution OK (" + initial_solution.iterations + " iteration(s))")
 
-    let solution_cost = find_solution_cost(initial_solution, cost_matrix)
-    debug("Initial solution cost: " + solution_cost);
+    initial_solution.cost = find_solution_cost(initial_solution, cost_matrix)
+    debug("Initial solution cost: " + initial_solution.cost);
 
-    success("Tabu search finished");
+    //test
+    let count = 0;
+    let current = _.clone(initial_solution);
+    let best = _.clone(current);
+
+    while(count < max_iterations){
+        let candidate = _.clone(current);
+
+        // rsh = route swap helper
+        let rsh = random_routes(candidate.routes);
+
+        let route2_index = _.findIndex(candidate.routes, (route) => _.isEqual(rsh.route2, route));
+        let route1_index = _.findIndex(candidate.routes, (route) => _.isEqual(rsh.route1, route));
+
+        // adds node1 to route2 right before node2
+        candidate.routes[route2_index] = add_node_before(rsh.node1, rsh.node2, rsh.route2);
+
+        // removes node1 from route1
+        candidate.routes[route1_index].splice(rsh.node1_index, 1);
+
+        // TODO: evaluate costs and add tabu methods
+        // TODO: make sure solution is not better than optimal
+
+        count++;
+    }
+    success("Tabu search finished on "+count+ " iterations.");
+}
+
+function delete_node(node, route){
+
+}
+
+function add_node_before(new_node, reference_node, route){
+    let index_reference = _.findIndex(route, (node) => node.id === reference_node.id)
+
+    route.splice(index_reference - 1, 0, new_node);
+
+    return route;
+}
+
+function random_routes(routes){
+    let route1 = [];
+    let route2 = [];
+    let node1 = {};
+    let node2 = {};
+    let node1_index = 0;
+    while(1){
+        while(1){
+
+            route1 = _.sample(routes);
+            route2 = _.sample(routes);
+            if(route1.length > 3) break;
+        }
+
+        node1 = _.sample(route1);
+        node1_index = _.findIndex(route1, (n) => _.isEqual(n, node1));
+
+        node2 = find_closest(node1, route2);
+
+        if(find_route_demand(route2) + node1.demand < CAPACITY) break;
+    }
+    return {route1, route2, node1, node2, node1_index};
+}
+
+function find_route_demand(route){
+    return _.reduce(route, (sum, node) => sum += node.demand, 0);
+}
+
+function find_closest(node, route){
+    let closest = route[0];
+
+    _.forEach(route, (n) => {
+        if(node_distance(node, n) < node_distance(node, closest)){
+            closest = n;
+        }
+    })
+
+    return closest;
+}
+
+function node_distance(node1, node2){
+    return distance([node1.x, node1.y], [node2.x, node2.y])
 }
 
 function find_solution_cost(solution, cost_matrix){
